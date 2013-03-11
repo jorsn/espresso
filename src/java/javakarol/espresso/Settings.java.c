@@ -3,10 +3,15 @@ package javakarol.espresso;
 
 import ro.jo.java.io.CharsetSensitiveFileToStringReader;
 
+import java.util.Properties;
 import java.util.Map;
 import java.util.HashMap;
 
 import java.io.File;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.IOException;
 
@@ -18,111 +23,98 @@ class Settings {
 	final static int OS_TYPE_WINDOWS = 0;
 	final static int OS_TYPE_UNIX = 42;
 
-	private String name;
-	private String version;
-	private String licenseHint;
-	private String buildEnv;
+	final static String NAME = __EK_NAME__;
+	final static String VERSION = __EK_VERSION__;
+	private final static String LICENSE_HINT = __EK_LICENSE_HINT__;
+	private final static String BUILD_ENV = __EK_BUILD_ENV__;
 
-	private Map<String, String> env;
+	private String gloprops;
+	private Properties props;
 
 	private HashMap<String, HashMap<String, String>> modes;
-	final static String DEFAULT_MODE = "standard";
+	final static String DEFAULT_MODE = "default";
 
 	private Image icon;
 
 	protected Settings () {
-		name = BuildInfo.NAME;
-		version = BuildInfo.VERSION;
-		licenseHint = String.format(BuildInfo.LICENSE_HINT); //, getLinefeed());
-		buildEnv = String.format(BuildInfo.BUILD_ENV);
-
-		env = new HashMap<String, String>(System.getenv());
-		for (String prefix : new String[] { "EK", "EKP" }) {
-			env.put(prefix + "_OS_TYPE_WINDOWS", Integer.toString(OS_TYPE_WINDOWS));
-			env.put(prefix + "_OS_TYPE_UNIX", Integer.toString(OS_TYPE_UNIX));
-			env.put(prefix + "_OS_TYPE", Integer.toString(File.separator.equals("/")
-					? OS_TYPE_UNIX
-					: OS_TYPE_WINDOWS));
-		}
+		initProps();
 
 		icon = Toolkit.getDefaultToolkit().getImage(getIconPath());
 		initModes();
 	}
 
-	protected int getOs() {
-		return Integer.parseInt(env.get("EK_OS_TYPE"));
+	protected void initProps() {
+		// reader used in this method
+		BufferedReader reader;
+
+		// main property file stored in env var
+		gloprops = System.getenv("EK_PROPS");
+
+		props = readProps(props, gloprops);
+
+		// load additional props specified in main prop file
+		for (String key : props.keySet().toArray(new String[0])) {
+			String val = getEkProp(key);
+			if ((key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) && new File(val).exists())
+				props = readProps(props, val);
+		}
+
+		String saves = getEkProp("ek.props.saves");
+		if (new File(saves).exists())
+				props = readProps(props, saves);
+	}
+
+	protected Properties readProps(Properties defaultProps, String path) {
+		BufferedReader reader = new BufferedReader(new FileReader(path));
+		Properties props = new Properties(defaultProps);
+		props.load(reader);
+
+		return props;
+	}
+
+	protected String getEkProp(String key) {
+		String eks = key.replaceAll("^ek\\.", "eks\\.");
+		String ek = key.replaceAll("^eks\\.", "ek\\.");
+		
+		String val = props.getProperty(eks);
+		if (val.isEmpty())
+			val = props.getProperty(ek);
+
+		return val;
 	}
 
 	protected boolean isLocal() {
-		return env.get("EK_IS_LOCAL").equals("0");
-	}
-
-	protected String getLinefeed() {
-		return System.getProperty("line.separator", "\n");
-	}
-
-	protected Map<String, String> getEnv() {
-		return env;
-	}
-
-	protected String getEnv(String envVarname) {
-		return env.get(envVarname);
-	}
-
-	protected String getName() {
-		return name;
-	}
-
-	protected String getVersion() {
-		return version;
-	}
-
-	protected String getLicenseHint() {
-		return licenseHint;
-	}
-
-	protected String getBuildEnv() {
-		return buildEnv;
+		return getEkProp("ek.islocal").equals("0");
 	}
 
 	protected String getPackageDir() {
-		return env.get("EK_PACKAGE_DIR");
+		return getEkProp("ek.packagedir");
 	}
 
 	protected void setPackageDir(String packageDir) {
-		env.put("EK_PACKAGE_DIR", packageDir);
-	}
-
-	protected String getUserPackageDir() {
-		return env.get("EK_USER_PACKAE_DIR");
-	}
-
-	protected void setUserPackageDir(String userPackageDir) {
-		env.put("EK_USER_PACKAE_DIR", userPackageDir);
-	}
-
-	protected String getHomeDir() {
-		return env.get("EK_HOME_DIR");
+		props.setProperty("ek.packagedir", packageDir);
 	}
 
 	protected String getUserKarolDir() {
-		return env.get("EK_USER_DIR");
+		return getEkProp("ek.user.dir");
 	}
 	
 	protected void setUserKarolDir(String userKarolDir) {
-		env.put("EK_USER_DIR", userKarolDir);
+		props.setProperty("ek.user.dir", userKarolDir);
 	}
 
-	protected String getProfilesDir() {
-		return env.get("EK_PROFILES_DIR");
+	protected String getDataDir() {
+		return getEkProp("ek.datadir");
 	}
 
-	protected void setProfilesDir(String profilesDir) {
-		env.put("EK_PROFILES_DIR", profilesDir);
+	protected String getModesDir() {
+		return getDataDir() + File.separator + "modes";
 	}
 
 	protected String getIconPath() {
-		return env.get("EK_ICON_PATH");
+		return String.format("%2s%1sicons%1sespresso.ico"
+				, File.separator
+				, getDataDir());
 	}
 
 	protected Image getIcon() {
@@ -130,52 +122,32 @@ class Settings {
 	}
 
 	protected String getLicensePath() {
-		return env.get("EK_LICENSE_PATH");
+		return getEkProp("ek.licenses.paths.ek");
 	}
 
 	protected String getMplPath() {
-		return env.get("EK_MPL_PATH");
+		return getEkProp("ek.licenses.paths.mpl");
 	}
 
 	protected String getApacheLicensePath() {
-		return env.get("EK_APACHE_LICENSE_PATH");
+		return getEkProp("ek.licenses.paths.apache");
 	}
 
-	protected String getSystemConfigFile() {
-		return env.get("EK_SYSTEM_CONFIG_FILE");
-	}
-
-	protected String getUserConfigFile() {
-		return env.get("EK_USER_CONFIG_FILE");
+	protected String getPropSavesPath() {
+		return getEkProp("ek.props.saves");
 	}
 
 	protected String getSegmentSavePath() {
-		return env.get("EK_SEGMENT_SAVE_PATH");
+		return getEkProp("ek.segmentsavepath");
 	}
 
 	protected void setSegmentSavePath(String segmentSavePath) {
-		env.put("EK_SEGMENT_SAVE_PATH", segmentSavePath);
-	}
-
-	protected String getJavac() {
-		return env.get("EK_JAVAC");
-	}
-
-	protected void setJavac(String javac) {
-		env.put("EK_JAVAC", javac);
-	}
-
-	protected String getJava() {
-		return env.get("EK_JAVA");
-	}
-
-	protected void setJava(String java) {
-		env.put("EK_JAVA", java);
+		props.setProperty("ek.segmentsavepath", segmentSavePath);
 	}
 
 	protected Dimension getDefaultSize() {
 		Dimension defaultSize = null;
-		String[] size = env.get("EK_SIZE").split("x");
+		String[] size = getEkProp("ek.size").split("x");
 		if (size.length == 2) {
 			int width = Integer.parseInt(size[0]);
 			int height = Integer.parseInt(size[1]);
@@ -186,7 +158,7 @@ class Settings {
 	}
 
 	protected void setDefaultSize(double width, double height) {
-		env.put("EK_SIZE", new Double(width).intValue() + "x" + new Double(height).intValue());
+		props.setProperty("ek.size", new Double(width).intValue() + "x" + new Double(height).intValue());
 	}
 
 	protected void setDefaultSize(Dimension size) {
@@ -194,11 +166,7 @@ class Settings {
 	}
 
 	protected void setMaximized() {
-		env.put("EK_SIZE", "max");
-	}
-
-	protected String getSaveScriptName() {
-		return env.get("EK_SAVE_SCRIPT_NAME") + "." + env.get("EK_SCRIPT_TYPE_" + (getOs() == OS_TYPE_UNIX ? "UNIX" : "DOS"));
+		props.setProperty("ek.size", "max");
 	}
 
 	protected HashMap<String, HashMap<String, String>> getModes() {
@@ -206,7 +174,7 @@ class Settings {
 	}
 
 	protected String getModeName() {
-		return env.get("EK_MODE_NAME");
+		return getEkProp("ek.modes.default");
 	}
 
 	protected HashMap<String, String> getMode(String name) {
@@ -214,7 +182,7 @@ class Settings {
 	}
 
 	protected void setMode(String name) {
-		env.put("EK_MODE_NAME", name);
+		props.setProperty("ek.modes.default", name);
 	}
 
 	protected void removeResetMode(String mode) {
@@ -225,7 +193,7 @@ class Settings {
 
 	protected HashMap<String, String> initMode(String mode) {
 		HashMap<String, String> map = new HashMap<String, String>(3, 1f);
-		File modeDir = new File(getProfilesDir() + File.separator + mode);
+		File modeDir = new File(getModesDir(), mode);
 		if (!modeDir.isDirectory()) {
 			if (modeDir.exists())
 				System.err.println(name + ": FATAL ERROR: "
@@ -268,7 +236,7 @@ class Settings {
 	}
 
 	protected void initModes() {
-		String[] modearr = env.get("EK_MODES").split("\\s");
+		String[] modearr = new File(getModesDir()).list();
 		modes = new HashMap<String, HashMap<String, String>>(modearr.length);
 		for (Object modeO : modearr) {
 			String mode = (String) modeO;
@@ -278,36 +246,23 @@ class Settings {
 	}
 
 	protected String getLookAndFeel() {
-		return env.get("EK_LOOK_AND_FEEL");
+		return getEkProp("ek.lookandfeel");
 	}
 
 	protected void setLookAndFeel(String name) {
-		env.put("EK_LOOK_AND_FEEL", name);
+		props.setProperty("ek.lookandfeel", name);
 	}
 
-	protected String save() {
-		String saveErrs = null;
-		try {
-			ProcessBuilder savepb = new ProcessBuilder(getSaveScriptName());
-			Map<String, String> saveEnv = savepb.environment();
-			saveEnv.clear();
-			saveEnv.putAll(env);
-			Process savep = savepb.start();
-			InputStream stderr = savep.getErrorStream();
-			byte[] b = new byte[stderr.available()];
-			stderr.read(b);
+	protected void save() {
+		Properties toSaveProps = new Properties();
+		for (String key : props.keySet().toArray(new String[0]))
+			if (props.getProperty(key.replaceAll("^ek\\.", "eks\\."), new String()).isEmpty())
+				toSaveProps.setProperty(key, props.getProperty(key));
 
-			saveErrs = new String(b);
-		} catch (IOException e) {
-			String error = getName() + ": FATAL ERROR: config could not be saved";
-			e.printStackTrace();
-			System.err.println(error);
-			saveErrs = error;
-		}
-
-		return saveErrs;
+		BufferedWriter writer = new BufferedWriter(new FileWriter(getEkProp("ek.props.saves")));
+		toSaveProps.store(writer, "Saved Properties. Changes will be overwritten.");
 	}
 
 }
 
-// vim: foldmethod=syntax
+// vim: foldmethod=syntax filetype=java
