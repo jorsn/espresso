@@ -64,8 +64,8 @@ class AboutDialog {
 
 		this.settings = settings;
 
-		this.espressoName = settings.getName();
-		this.version = settings.getVersion();
+		this.espressoName = Settings.NAME;
+		this.version = Settings.VERSION;
 
 		this.licensePath = settings.getLicensePath();
 		this.mplPath = settings.getMplPath();
