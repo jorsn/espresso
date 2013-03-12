@@ -111,14 +111,14 @@ public class EspressoKarol implements ActionListener, WindowListener {
 			if (!args[0].replace("--version", "-v").equals("-v"))
 				version = new String();
 			else
-				version = settings.getVersion();
+				version = Settings.VERSION;
 
 			int exitVal;
 			if (!version.isEmpty()) {
 				System.out.println(String.format("%n%1$s, version %2$s %n%3$s %n %n%4$s %n %n%5$s %n",
-							settings.getName(), settings.getVersion(),
-							settings.getLicenseHint(),
-							settings.getBuildEnv(),
+							Settings.NAME, Settings.VERSION,
+							Settings.LICENSE_HINT,
+							settings.BUILD_ENV,
 							usage));
 				exitVal = 0;
 			} else {
@@ -226,7 +226,7 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		}
 
 		if (changeTitle)
-			frame.setTitle(settings.getSegmentSavePath() + " - " + settings.getName());
+			frame.setTitle(settings.getSegmentSavePath() + " - " + Settings.NAME);
 
 		return file;
 	}
@@ -319,7 +319,8 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		File javafile = new File(String.format("%1$s%3$s%2$s%3$sPlayer" + Integer.toHexString(editor.getText().hashCode())
 					+ ".java", userKarolDir, settings.getPackageDir(), File.separator));
 		exportAsJavaFile(javafile, editor.getText());
-		String jklibdir = String.format((settings.isLocal() ? "..%1$slib"
+		String jklibdir = String.format((settings.isLocal()
+					? ".%1$slib"
 					: "..%1$s..%<slib%<sjava%<sjavakarol"),
 				File.separator);
 		String classpathString = String.format("%1$s%4$s%2$s%3$sjavakarol.jar%4$s.",
@@ -392,7 +393,7 @@ public class EspressoKarol implements ActionListener, WindowListener {
 					+ "Verwende bisherigen Pfad: " + settings.getJava(), false)
 				.getAbsolutePath();
 			if (java != null)
-				settings.setJava(java);
+				settings.setJava(java);*/
 		} else if (command.startsWith("mode=")) {
 			settings.setMode(command.split("=")[1]);
 			initMode();
@@ -417,7 +418,7 @@ public class EspressoKarol implements ActionListener, WindowListener {
 			SwingUtilities.updateComponentTreeUI(frame);
 			settings.setLookAndFeel(newLookAndFeel);
 		} catch (Exception e) {
-			if (new File(settings.getUserConfigFile()).exists())
+			if (new File(settings.getPropSavesPath()).exists())
 				showError("Design konnte nicht geladen werden. Benutze Standard.");
 			setLookAndFeel(UIManager
 					.getSystemLookAndFeelClassName());
@@ -442,7 +443,7 @@ public class EspressoKarol implements ActionListener, WindowListener {
 	public void showError(String message) {
 		JOptionPane.showMessageDialog(frame, message, "FEHLER",
 				JOptionPane.ERROR_MESSAGE);
-		System.err.println(String.format("%1$s: %2$s", settings.getName(), message));
+		System.err.println(String.format("%1$s: %2$s", Settings.NAME, message));
 	}
 
 	@Override
@@ -460,7 +461,7 @@ public class EspressoKarol implements ActionListener, WindowListener {
 	@Override
 	public void windowClosing(WindowEvent arg0) {
 		int exit = JOptionPane.showConfirmDialog(frame,
-				settings.getName() + " beenden?", "Beenden",
+				Settings.NAME + " beenden?", "Beenden",
 				JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 		if (exit == JOptionPane.YES_OPTION) {
 			int eksSave = JOptionPane.showConfirmDialog(frame,
@@ -474,17 +475,17 @@ public class EspressoKarol implements ActionListener, WindowListener {
 			else
 				settings.setDefaultSize(frame.getSize());
 
-			String saveErr = settings.save();
-			if (!saveErr.isEmpty()) {
+			try {
+				settings.save();
+				System.exit(0);
+			} catch (Exception e) {
 				int exitAnw = JOptionPane.showConfirmDialog(frame,
 						String.format("Speichern der Konfiguration"
 							+ "fehlgeschlagen:\n%1s\n\nTrotzdem beenden?",
-							saveErr), "Beenden",
+							e.getMessage()), "Beenden",
 						JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 				if (exitAnw == JOptionPane.YES_OPTION)
 					System.exit(2);
-			} else {
-				System.exit(0);
 			}
 		}
 	}
@@ -492,7 +493,6 @@ public class EspressoKarol implements ActionListener, WindowListener {
 	@Override
 	public void windowDeactivated(WindowEvent arg0) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -531,7 +531,7 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		frame.addWindowListener(this);
 
 		frame.setLayout(layout);
-		frame.setTitle(settings.getSegmentSavePath() + " - " + settings.getName());
+		frame.setTitle(settings.getSegmentSavePath() + " - " + Settings.NAME);
 		frame.setIconImage(settings.getIcon());
 		setLookAndFeel(settings.getLookAndFeel());
 
@@ -675,19 +675,19 @@ public class EspressoKarol implements ActionListener, WindowListener {
 			modeMenu.add(item);
 		}
 
-		JMenuItem setJavacLoc = new JMenuItem(
+		/*JMenuItem setJavacLoc = new JMenuItem(
 				"Pfad für den Java Compiler setzen");
 		setJavacLoc.addActionListener(this);
 		setJavacLoc.setActionCommand("setJavacLoc");
 
 		JMenuItem setJavaLoc = new JMenuItem("Pfad für die Java VM setzen");
 		setJavaLoc.addActionListener(this);
-		setJavaLoc.setActionCommand("setJavaLoc");
+		setJavaLoc.setActionCommand("setJavaLoc");*/
 
 		settingsMenu.add(lookAndFeelMenu);
 		settingsMenu.add(modeMenu);
-		settingsMenu.add(setJavaLoc);
-		settingsMenu.add(setJavacLoc);
+		/*settingsMenu.add(setJavaLoc);
+		settingsMenu.add(setJavacLoc);*/
 
 		JMenu helpMenu = new JMenu("Hilfe");
 
