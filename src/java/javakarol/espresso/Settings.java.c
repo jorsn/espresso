@@ -14,6 +14,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 
 import java.awt.Toolkit;
 import java.awt.Dimension;
@@ -25,8 +26,8 @@ class Settings {
 
 	final static String NAME = __EK_NAME__;
 	final static String VERSION = __EK_VERSION__;
-	private final static String LICENSE_HINT = __EK_LICENSE_HINT__;
-	private final static String BUILD_ENV = __EK_BUILD_ENV__;
+	final static String LICENSE_HINT = __EK_LICENSE_HINT__;
+	final static String BUILD_ENV = __EK_BUILD_ENV__;
 
 	private String gloprops;
 	private Properties props;
@@ -50,21 +51,43 @@ class Settings {
 		// main property file stored in env var
 		gloprops = System.getenv("EK_PROPS");
 
-		props = readProps(props, gloprops);
+		try {
+			props = readProps(props, gloprops);
+		} catch (FileNotFoundException e) {
+			System.err.println("FATAL ERROR: main property file(" + gloprops + ") not found:");
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IOException e) {
+			System.err.println("FATAL ERROR: main property file(" + gloprops + ") could not be read:");
+			e.printStackTrace();
+			System.exit(1);
+		}
 
 		// load additional props specified in main prop file
 		for (String key : props.keySet().toArray(new String[0])) {
 			String val = getEkProp(key);
-			if ((key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) && new File(val).exists())
-				props = readProps(props, val);
+			if ((key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) && new File(val).exists()) {
+				try {
+					props = readProps(props, val);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
 		}
 
 		String saves = getEkProp("ek.props.saves");
-		if (new File(saves).exists())
+		if (new File(saves).exists()) {
+			try {
 				props = readProps(props, saves);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
-	protected Properties readProps(Properties defaultProps, String path) {
+	protected Properties readProps(Properties defaultProps, String path)
+		throws FileNotFoundException, IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(path));
 		Properties props = new Properties(defaultProps);
 		props.load(reader);
@@ -77,14 +100,17 @@ class Settings {
 		String ek = key.replaceAll("^eks\\.", "ek\\.");
 		
 		String val = props.getProperty(eks);
-		if (val.isEmpty())
+		if (val == null || val.isEmpty()) {
 			val = props.getProperty(ek);
+			if (val == null || val.isEmpty())
+				val = new String();
+		}
 
 		return val;
 	}
 
 	protected boolean isLocal() {
-		return getEkProp("ek.islocal").equals("0");
+		return getEkProp("ek.islocal").equals("true");
 	}
 
 	protected String getPackageDir() {
@@ -96,11 +122,11 @@ class Settings {
 	}
 
 	protected String getUserKarolDir() {
-		return getEkProp("ek.user.dir");
+		return getEkProp("ek.userdir");
 	}
 	
 	protected void setUserKarolDir(String userKarolDir) {
-		props.setProperty("ek.user.dir", userKarolDir);
+		props.setProperty("ek.userdir", userKarolDir);
 	}
 
 	protected String getDataDir() {
@@ -111,10 +137,12 @@ class Settings {
 		return getDataDir() + File.separator + "modes";
 	}
 
+	protected String getIconDir() {
+		return getDataDir() + File.separator + "icons";
+	}
+
 	protected String getIconPath() {
-		return String.format("%2s%1sicons%1sespresso.ico"
-				, File.separator
-				, getDataDir());
+		return getIconDir() + File.separator + "espresso.png";
 	}
 
 	protected Image getIcon() {
@@ -196,10 +224,10 @@ class Settings {
 		File modeDir = new File(getModesDir(), mode);
 		if (!modeDir.isDirectory()) {
 			if (modeDir.exists())
-				System.err.println(name + ": FATAL ERROR: "
+				System.err.println(NAME + ": FATAL ERROR: "
 						+ modeDir.getAbsolutePath() + " is not a directory!");
 			else
-				System.err.println(name + ": FATAL ERROR: The directory"
+				System.err.println(NAME + ": FATAL ERROR: The directory"
 						+ modeDir.getAbsolutePath() + " does not exist!");
 
 			removeResetMode(mode);
@@ -215,7 +243,7 @@ class Settings {
 					reader.read(cbuf);
 					mode.put(partFileName, new String(cbuf));*/
 					map.put(partFileName, CharsetSensitiveFileToStringReader.readFile(modeDir.getAbsolutePath()
-							+ File.separator + partFileName));
+								+ File.separator + partFileName));
 
 				} catch (Exception e) {
 					if (partFileName.equals("code")) {
@@ -253,7 +281,7 @@ class Settings {
 		props.setProperty("ek.lookandfeel", name);
 	}
 
-	protected void save() {
+	protected void save() throws IOException {
 		Properties toSaveProps = new Properties();
 		for (String key : props.keySet().toArray(new String[0]))
 			if (props.getProperty(key.replaceAll("^ek\\.", "eks\\."), new String()).isEmpty())
@@ -261,6 +289,16 @@ class Settings {
 
 		BufferedWriter writer = new BufferedWriter(new FileWriter(getEkProp("ek.props.saves")));
 		toSaveProps.store(writer, "Saved Properties. Changes will be overwritten.");
+	}
+
+	// be removed
+	protected String getJava() {
+		return getEkProp("ek.java.vm");
+	}
+	
+	// be removed
+	protected String getJavac() {
+		return getEkProp("ek.java.compiler");
 	}
 
 }
