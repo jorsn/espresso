@@ -378,7 +378,7 @@ public class EspressoKarol implements ActionListener, WindowListener {
 			}
 		} else if (command.startsWith("lookAndFeel=")) {
 			setLookAndFeel(command.split("=")[1]);
-		} else if (command.equals("setJavacLoc")) {
+		/*} else if (command.equals("setJavacLoc")) {
 			String javac = chooseFile(JFileChooser.OPEN_DIALOG,
 					getFileFilter("Java Compiler", "javac(\\..*)?"),
 					"FEHLER: Der Pfad ist ungültig!\n"
@@ -524,6 +524,11 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		config.put("PopupMenu", "cut-to-clipboard,copy-to-clipboard,"
 				+ "paste-from-clipboard,-,select-all,-,undo,redo,"
 				+ "-,find,find-next,-,indent,unindent");
+		// exclude not working script
+		for (String key : new String[] { "Action.insert-date",
+			"Action.insert-date.Function", "Script.insert-date.URL" })
+			config.remove(key);
+
 		editor = new JEditorPane();
 
 		console = new JTextArea();
@@ -637,15 +642,16 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		tree = new JTree(root);
 		tree.setRootVisible(true);
 
-		JButton saveButton = new JButton(new ImageIcon("icons/save.png"));
+		String iconDir = settings.getIconDir();
+		JButton saveButton = new JButton(new ImageIcon(iconDir + File.separator + "save.png"));
 		saveButton.setToolTipText("Speichern");
 		saveButton.setActionCommand("save");
 
-		JButton openButton = new JButton(new ImageIcon("icons/open.png"));
+		JButton openButton = new JButton(new ImageIcon(iconDir + File.separator + "open.png"));
 		openButton.setToolTipText("Datei öffnen");
 		openButton.setActionCommand("open");
 
-		JButton playButton = new JButton(new ImageIcon("icons/play.png"));
+		JButton playButton = new JButton(new ImageIcon(iconDir + File.separator + "play.png"));
 		playButton.setToolTipText("Abspielen");
 		playButton.setActionCommand("play");
 
