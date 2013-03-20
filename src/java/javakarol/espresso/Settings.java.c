@@ -20,6 +20,8 @@ import java.awt.Toolkit;
 import java.awt.Dimension;
 import java.awt.Image;
 
+import javax.swing.JFrame;
+
 class Settings {
 	final static int OS_TYPE_WINDOWS = 0;
 	final static int OS_TYPE_UNIX = 42;
@@ -56,11 +58,11 @@ class Settings {
 		} catch (FileNotFoundException e) {
 			System.err.println("FATAL ERROR: main property file(" + gloprops + ") not found:");
 			e.printStackTrace();
-			System.exit(1);
+			System.exit(2);
 		} catch (IOException e) {
 			System.err.println("FATAL ERROR: main property file(" + gloprops + ") could not be read:");
 			e.printStackTrace();
-			System.exit(1);
+			System.exit(2);
 		}
 
 		// load additional props specified in main prop file
@@ -174,15 +176,19 @@ class Settings {
 	}
 
 	protected Dimension getDefaultSize() {
-		Dimension defaultSize = null;
-		String[] size = getEkProp("ek.size").split("x");
-		if (size.length == 2) {
-			int width = Integer.parseInt(size[0]);
-			int height = Integer.parseInt(size[1]);
-			defaultSize = new Dimension(width, height);
+		String ekSize = getEkProp("ek.size");
+		int width;
+		int height;
+		if (ekSize.isEmpty()) {
+			width = 800;
+			height = 600;
+			
+		} else {
+			String[] size = ekSize.split("x");
+			width = Integer.parseInt(size[0]);
+			height = Integer.parseInt(size[1]);
 		}
-
-		return defaultSize;
+		return new Dimension(width, height);
 	}
 
 	protected void setDefaultSize(double width, double height) {
@@ -193,8 +199,15 @@ class Settings {
 		setDefaultSize(size.getWidth(), size.getHeight());
 	}
 
-	protected void setMaximized() {
-		props.setProperty("ek.size", "max");
+	protected void setExtendedState(int state) {
+		props.setProperty("ek.extendedState", Integer.toString(state));
+	}
+
+	protected int getExtendedState() {
+		String extStateS = getEkProp("ek.extendedState");
+		return extStateS.isEmpty()
+			? JFrame.NORMAL
+			: Integer.parseInt(extStateS);
 	}
 
 	protected HashMap<String, HashMap<String, String>> getModes() {
@@ -291,9 +304,12 @@ class Settings {
 		toSaveProps.store(writer, "Saved Properties. Changes will be overwritten.");
 	}
 
-	// be removed
 	protected String getJava() {
-		return getEkProp("ek.java.vm");
+		String java = getEkProp("ek.java.vm");
+		if (java == null || java.isEmpty())
+			java = String.format("%1$s%2$sbin%2$sjava",
+					System.getProperty("java.home"), File.separator);
+		return java;
 	}
 	
 	// be removed
