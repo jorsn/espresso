@@ -21,6 +21,7 @@ package javakarol.espresso;
 
 
 import ro.jo.java.io.CharsetSensitiveFileToStringReader;
+import ro.jo.java.io.MergedCharacterInputStream;
 
 import java.awt.Image;
 import java.awt.Font;
@@ -31,19 +32,29 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.OutputStream;
+import java.io.PipedOutputStream;
 import java.io.SequenceInputStream;
+import java.io.BufferedInputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
@@ -51,6 +62,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.regex.Pattern;
+//import java.util.concurrent.ForkJoinPool;
+//import java.util.concurrent.ForkJoinWorkerThread;
+//import java.util.concurrent.RecursiveAction;
+import java.util.Arrays;
+import java.util.Locale;
+import java.net.URL;
+import java.net.URLClassLoader;
 
 import javax.swing.JButton;
 import javax.swing.ImageIcon;
@@ -75,22 +93,31 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.text.StyledEditorKit;
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import javax.tools.ToolProvider;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaCompiler.CompilationTask;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+
 import jsyntaxpane.DefaultSyntaxKit;
 import jsyntaxpane.syntaxkits.JavaSyntaxKit;
 import jsyntaxpane.util.Configuration;
+import jsyntaxpane.actions.ActionUtils;
 
 /**
  * @author Johannes Rosenberger
  * 
  */
-public class EspressoKarol implements ActionListener, WindowListener {
+public class EspressoKarol implements ActionListener, WindowListener, ComponentListener {
 
-	private Settings settings;
+	private final Settings settings;
 
 	HashMap<String, String> mode;
 
-	JFrame frame;
-	GridBagLayout layout;
+	final JFrame frame;
+	//GridBagLayout layout;
 
 	JTextArea modeDescTextArea;
 	JEditorPane editor;
@@ -99,6 +126,9 @@ public class EspressoKarol implements ActionListener, WindowListener {
 
 	public EspressoKarol(String[] args) {
 		this.settings = new Settings();
+		this.frame = new JFrame();
+
+		//System.setSecurityManager(new EKSecurityManager());
 		argEval(args);
 
 		initUI();
@@ -120,10 +150,10 @@ public class EspressoKarol implements ActionListener, WindowListener {
 							Settings.LICENSE_HINT,
 							settings.BUILD_ENV,
 							usage));
-				exitVal = 0;
+				exitVal = 1;
 			} else {
 				System.err.println(usage);
-				exitVal = 1;
+				exitVal = 2;
 			}
 			System.exit(exitVal);
 		}
@@ -294,7 +324,13 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		}
 	}
 
-	public void exportAsJavaFile(File javafile, String content)
+	public String getJavaCode(String className, String textSegment) {
+		return mode.get("code").replaceFirst("Player",
+				className).replace(
+				"// karolcode", textSegment);
+	}
+
+	public void saveJavaFile(File javafile, String content)
 			throws IOException {
 		/*
 		 * File template = new File(ClassLoader.getSystemResource(
@@ -305,9 +341,7 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		if (!javafile.getParentFile().exists())
 			javafile.getParentFile().mkdirs();
 
-		writeFile(javafile, mode.get("code").replaceFirst("Player",
-					javafile.getName().split("\\.")[0]).replace(
-						"// karolcode", content));
+		writeFile(javafile, getJavaCode(javafile.getName().split("\\.")[0], content));
 		/*FileWriter writer = new FileWriter(javafile);
 		writer.write(mode.get("code").replaceFirst("Player",
 				javafile.getName().split("\\.")[0]).replace("// karolcode", content));
@@ -315,15 +349,18 @@ public class EspressoKarol implements ActionListener, WindowListener {
 	}
 
 	public void play() throws IOException {
-		String userKarolDir = settings.getUserKarolDir();
-		File javafile = new File(String.format("%1$s%3$s%2$s%3$sPlayer" + Integer.toHexString(editor.getText().hashCode())
-					+ ".java", userKarolDir, settings.getPackageDir(), File.separator));
-		exportAsJavaFile(javafile, editor.getText());
-		String jklibdir = String.format((settings.isLocal()
+		System.gc();
+		final String userKarolDir = settings.getUserKarolDir();
+		final String className = "Player" + Integer.toHexString(editor.getText().hashCode());
+		/*final File javafile = new File(String.format("%1$s%3$s%2$s%3$s" + className
+					+ ".java", userKarolDir, settings.getPackageDir(), File.separator));*/
+		final StringJavaFileObject javafile = new StringJavaFileObject(settings.getPackageDir() + "." + className, getJavaCode(className, editor.getText()));
+
+		final String jklibdir = String.format((settings.isLocal()
 					? ".%1$slib"
 					: "..%1$s..%<slib%<sjava%<sjavakarol"),
 				File.separator);
-		String classpathString = String.format("%1$s%4$s%2$s%3$sjavakarol.jar%4$s.",
+		final String classpathString = String.format("%1$s%4$s%2$s%3$sjavakarol.jar%4$s.",
 				userKarolDir, jklibdir, File.separator, File.pathSeparator);
 			/*userKarolDir + File.pathSeparator + "."
 				+ File.pathSeparator + (settings.isLocal() ? ".."
@@ -331,6 +368,50 @@ public class EspressoKarol implements ActionListener, WindowListener {
 						+ ".." + File.separator + "lib" + File.separator
 						+ "java" + File.separator
 						+ "javakarol") + File.separator + "javakarol.jar";*/
+
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		DiagnosticCollector<JavaFileObject> diagnostics =
+			new DiagnosticCollector<JavaFileObject>();
+		StandardJavaFileManager fileManager = compiler.getStandardFileManager( diagnostics, null, null );
+		Iterable<? extends JavaFileObject> units = Arrays.asList( javafile );
+		CompilationTask task = compiler.getTask( null, fileManager, diagnostics,
+				Arrays.asList("-d", userKarolDir)
+					, null, units );
+		boolean success = task.call();
+		fileManager.close();
+
+		console.setText(new String());
+		if (!success) {
+			for ( Diagnostic<?> diagnostic : diagnostics.getDiagnostics()) {
+				console.append("Fehler beim Compilieren:\n");
+				console.append(String.format( "Art: %1$s%n", diagnostic.getKind() ));
+				//console.append(String.format( "Quelle: %1$s%n", diagnostic.getSource() ));
+				console.append(String.format( "Code und Fehlermeldung: %1$s: %2$s%n", diagnostic.getCode(),
+							diagnostic.getMessage(Locale.GERMANY) ));
+				int lnum = ((int) diagnostic.getLineNumber()) - Integer.parseInt(mode.get("offset"));
+				console.append(String.format( "Zeile: %1$s%n", lnum) );
+				ActionUtils.setCaretPosition(editor, lnum, (int) diagnostic.getColumnNumber());
+				/*console.append(String.format( "Zeile/Spalte: %1$s/%2$s%n", diagnostic.getLineNumber() - Integer.parseInt(mode.get("offset")),
+							diagnostic.getColumnNumber() ));
+				//console.append(String.format( "Startpostion/Endposition: %1$s/%2$s%n", diagnostic.getStartPosition(),
+							//diagnostic.getEndPosition() ));*/
+			}
+		/*
+		System.err.println("compiling");
+		final PipedOutputStream compStdout = new PipedOutputStream();
+		final PipedOutputStream compStderr = new PipedOutputStream();
+		final MergedCharacterInputStream merged = new MergedCharacterInputStream(80
+				, new PipedInputStream(compStdout)
+				, new PipedInputStream(compStderr));
+		ToolProvider.getSystemJavaCompiler().run(null, compStdout, compStderr,
+				"-classpath", classpathString, javafile.getAbsolutePath());
+		compStdout.close();
+		compStderr.close();
+
+		String stdoutErr = merged.readString();
+		console.setText(stdoutErr);*/
+		/*
+
 		ProcessBuilder compilation = new ProcessBuilder(settings.getJavac(), "-classpath",
 				classpathString, javafile.getAbsolutePath());
 		Process compp = compilation.start();
@@ -339,28 +420,60 @@ public class EspressoKarol implements ActionListener, WindowListener {
 						compp.getErrorStream(),
 						compp.getInputStream()))),
 				"espresso-karol-javac-output");
-		try {
-			if (compp.waitFor() == 0) {
-				Process karolexec = new ProcessBuilder(settings.getJava(),
-								"-classpath", classpathString, getClass()
-										.getPackage().getName()
-										+ "."
-										+ javafile.getName().split("\\.")[0])
-								.start();
-				console.read(new BufferedReader(new InputStreamReader(
-							new SequenceInputStream(
-								karolexec.getErrorStream(),
-								karolexec.getInputStream()))),
-						"espresso-karol-java-output");
-								
-			}
-		} catch (InterruptedException e) {
-			console.read(new StringReader(e.getMessage()),
-					"InterruptedException while running java");
+
+				*/
+
+		} else {
+			Process karolexec = new ProcessBuilder(settings.getJava(),
+					"-classpath", classpathString, 
+					settings.getPackageDir() + "." + className)
+				.redirectErrorStream(true).start();
+			BufferedReader exout = new BufferedReader(new InputStreamReader(karolexec.getInputStream()));
+
+			String line = null;
+			do {
+				line = exout.readLine();
+				if (line != null)
+					console.append(line + "\n");
+			} while (line != null);
 		}
-		javafile.deleteOnExit();
-		new File(javafile.getAbsolutePath().replace(".java", ".class"))
-				.deleteOnExit();
+		
+		//console.read();
+		
+		/*System.err.println("playing");
+		Thread t = new Thread(new Runnable() {
+			public void run() {
+				try {
+					File playerFile = new File(userKarolDir);
+
+					System.err.println(playerFile.toURI().toURL().toString());
+					URLClassLoader.newInstance(new URL[] { playerFile.toURI().toURL() }).loadClass("javakarol.espresso." + className)
+						.getMethod("main").invoke(this);
+				} catch (SecurityException se) {
+				} catch (ClassNotFoundException cnfe) {
+					/*PipedOutputStream straceO = new PipedOutputStream();
+
+					  cnfe.printStackTrace(new PrintStream(straceO));
+					  console.read(new InputStreamReader(new PipedInputStream(straceO)), "Player.stack-trace");*/
+					/*cnfe.printStackTrace();
+				} catch (Exception e) {
+					/*PipedOutputStream straceO = new PipedOutputStream();
+
+					  e.printStackTrace(new PrintStream(straceO));
+					  console.read(new InputStreamReader(new PipedInputStream(straceO)), "Player.stack-trace");*/
+					/*e.printStackTrace();
+				}
+			}
+		});
+		t.start();*/
+		
+
+		//javafile.delete();
+		//new File(javafile.getAbsolutePath().replace(".java", ".class"))
+				//.delete();
+		new File(String.format("%1$s%4$s%2$s%4$s%3$s.class", userKarolDir
+					, settings.getPackageDir(), className, File.separator)).delete();
+		System.gc();
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -446,19 +559,38 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		System.err.println(String.format("%1$s: %2$s", Settings.NAME, message));
 	}
 
-	@Override
+	//@Override
+	public void componentHidden(ComponentEvent event) {
+	}
+
+	//@Override
+	public void componentMoved(ComponentEvent event) {
+	}
+
+	//@Override
+	public void componentResized(ComponentEvent event) {
+		Component c = event.getComponent();
+		if (c == frame && frame.getExtendedState() == JFrame.NORMAL)
+			settings.setDefaultSize(frame.getSize());
+	}
+
+	//@Override
+	public void componentShown(ComponentEvent event) {
+	}
+
+	//@Override
 	public void windowActivated(WindowEvent arg0) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
+	//@Override
 	public void windowClosed(WindowEvent arg0) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
+	//@Override
 	public void windowClosing(WindowEvent arg0) {
 		int exit = JOptionPane.showConfirmDialog(frame,
 				Settings.NAME + " beenden?", "Beenden",
@@ -470,14 +602,11 @@ public class EspressoKarol implements ActionListener, WindowListener {
 			if (eksSave == JOptionPane.YES_OPTION)
 				saveFile();
 
-			if (frame.getExtendedState() == JFrame.MAXIMIZED_BOTH)
-				settings.setMaximized();
-			else
-				settings.setDefaultSize(frame.getSize());
-
 			try {
+				settings.setExtendedState(frame.getExtendedState());
+
 				settings.save();
-				System.exit(0);
+				System.exit(1);
 			} catch (Exception e) {
 				int exitAnw = JOptionPane.showConfirmDialog(frame,
 						String.format("Speichern der Konfiguration"
@@ -485,29 +614,31 @@ public class EspressoKarol implements ActionListener, WindowListener {
 							e.getMessage()), "Beenden",
 						JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 				if (exitAnw == JOptionPane.YES_OPTION)
-					System.exit(2);
+					System.exit(3);
+				else
+					frame.setVisible(true);
 			}
 		}
 	}
 
-	@Override
+	//@Override
 	public void windowDeactivated(WindowEvent arg0) {
 		// TODO Auto-generated method stub
 	}
 
-	@Override
+	//@Override
 	public void windowDeiconified(WindowEvent arg0) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
+	//@Override
 	public void windowIconified(WindowEvent arg0) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
+	//@Override
 	public void windowOpened(WindowEvent arg0) {
 		if (JOptionPane.showConfirmDialog(frame, "Datei öffnen?", "Öffnen",
 				JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION)
@@ -515,12 +646,12 @@ public class EspressoKarol implements ActionListener, WindowListener {
 	}
 
 	public void initUI() {
-		frame = new JFrame();
-		layout = new GridBagLayout();
+		//layout = new GridBagLayout();
 
 		Configuration config = DefaultSyntaxKit.getConfig(JavaSyntaxKit.class);
 		config.put("Components", "jsyntaxpane.components.PairsMarker,"
-				+ "jsyntaxpane.components.TokenMarker");
+				+ "jsyntaxpane.components.TokenMarker,"
+				+ "jsyntaxpane.components.LineNumbersRuler");
 		config.put("PopupMenu", "cut-to-clipboard,copy-to-clipboard,"
 				+ "paste-from-clipboard,-,select-all,-,undo,redo,"
 				+ "-,find,find-next,-,indent,unindent");
@@ -534,19 +665,13 @@ public class EspressoKarol implements ActionListener, WindowListener {
 		console = new JTextArea();
 
 		frame.addWindowListener(this);
+		frame.addComponentListener(this);
 
-		frame.setLayout(layout);
+		BorderLayout layout = new BorderLayout();
+		//frame.setLayout(layout);
 		frame.setTitle(settings.getSegmentSavePath() + " - " + Settings.NAME);
 		frame.setIconImage(settings.getIcon());
 		setLookAndFeel(settings.getLookAndFeel());
-
-		Dimension defaultSize = settings.getDefaultSize();
-		if (defaultSize == null) {
-			frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-		} else {
-			frame.setSize(defaultSize);
-		}
-		frame.setMinimumSize(new Dimension(400, 300));
 
 		/*StyledEditorKit editorkit = new StyledEditorKit();
 		editorkit.install(editor);
@@ -720,6 +845,13 @@ public class EspressoKarol implements ActionListener, WindowListener {
 			}
 		}
 
+
+		frame.setMinimumSize(new Dimension(400, 300));
+		frame.setPreferredSize(settings.getDefaultSize());
+		frame.setExtendedState(settings.getExtendedState());
+		frame.pack();
+
+
 		editor.setMinimumSize(new Dimension(200, 100));
 		console.setMinimumSize(new Dimension(200, 100));
 		console.setEditable(false);
@@ -727,32 +859,39 @@ public class EspressoKarol implements ActionListener, WindowListener {
 
 		JPanel editP = new JPanel(true);
 		editP.setLayout(layout);
+		editP.add(modeDescTextArea, BorderLayout.NORTH);
+		editP.add(new JScrollPane(editor));
 
-		addGridBagComponent(editP, layout, modeDescTextArea, 0, 50, 800, 50, 0, 0);
-		addGridBagComponent(editP, layout, new JScrollPane(editor), 0,
+
+		//addGridBagComponent(editP, layout, modeDescTextArea, 0, 50, 800, 50, 0, 0);
+		/*addGridBagComponent(editP, layout, new JScrollPane(editor), 0,
 				GridBagConstraints.RELATIVE, 800, GridBagConstraints.RELATIVE,
-				1.0, 1.0);
-
-		JSplitPane right = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
-		right.setBottomComponent(new JScrollPane(console));
-		right.setTopComponent(editP);
-		right.setDividerLocation(frame.getHeight() * 2 / 3);
-		right.setOneTouchExpandable(true);
-
-		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true,
-				new JScrollPane(tree), right);
-		split.setDividerLocation(frame.getWidth() / 3);
-		split.setOneTouchExpandable(true);
+				1.0, 1.0);*/
 
 		frame.setJMenuBar(bar);
+
+		JSplitPane right = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
+		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true,
+				new JScrollPane(tree), right);
+		frame.add(split);
+
+		right.setBottomComponent(new JScrollPane(console));
+		right.setTopComponent(editP);
+		right.setDividerLocation((int) (frame.getHeight() * 0.58));
+		right.setOneTouchExpandable(true);
+
+		split.setDividerLocation((int) (frame.getWidth() / 4));
+		split.setOneTouchExpandable(true);
+
 		//addGridBagComponent(frame, layout, bar, 0, 50, 800, 50, 0, 0);
-		addGridBagComponent(frame, layout, split, 0,
+		/*addGridBagComponent(frame, layout, split, 0,
 				GridBagConstraints.RELATIVE, 800, GridBagConstraints.RELATIVE,
-				1.0, 1.0);
+				1.0, 1.0);*/
 
 		DefaultSyntaxKit.initKit();
 		editor.setContentType("text/java");
 		initMode();
+
 
 		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		frame.setLocationByPlatform(true);

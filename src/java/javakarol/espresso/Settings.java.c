@@ -262,7 +262,7 @@ class Settings {
 					mode.put(partFileName, new String(cbuf));*/
 					map.put(partFileName, CharsetSensitiveFileToStringReader.readFile(modeDir.getAbsolutePath()
 								+ File.separator + partFileName));
-
+					map.put("offset", Integer.toString(map.get("code").split("// karolcode")[0].split("\\n").length - 1 ));
 				} catch (Exception e) {
 					if (partFileName.equals("code")) {
 						removeResetMode(mode);
