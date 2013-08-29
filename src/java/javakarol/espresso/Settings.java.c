@@ -68,11 +68,16 @@ class Settings {
 		// load additional props specified in main prop file
 		for (String key : props.keySet().toArray(new String[0])) {
 			String val = getEkProp(key);
-			if ((key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) && new File(val).exists()) {
-				try {
-					props = readProps(props, val);
-				} catch (Exception e) {
-					e.printStackTrace();
+			//if ((key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) && new File(val).exists()) {
+			if (key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) {
+				for (String path : val.split(":")) {
+					if (new File(path).exists()) {
+						try {
+							props = readProps(props, path);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 
