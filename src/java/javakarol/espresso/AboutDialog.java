@@ -55,7 +55,6 @@ class AboutDialog {
 
 
 	private JFrame aboutDialog;
-	private JPanel aboutPanel;
 	private JTextPane aboutPane;
 
 	private String aboutText;
@@ -78,8 +77,6 @@ class AboutDialog {
 		iconURLString = new File(settings.getIconPath()).toURI().toString();
 
 		aboutDialog = new JFrame("Über " + espressoName);
-
-		aboutPanel = new JPanel(true);
 
 		aboutPane = new JTextPane();
 		aboutPane.setEditable(false);
@@ -316,10 +313,7 @@ class AboutDialog {
 				}
 			}
 		});
-		aboutPanel.add(aboutPane);
-		aboutDialog.add(aboutPanel);
-		// d.setSize(600, 450);
-		// licenseHintWindow.setMinimumSize(new Dimension(700, 480));
+		aboutDialog.add(aboutPane);
 		aboutDialog.pack();
 		aboutDialog.setVisible(true);
 	}
