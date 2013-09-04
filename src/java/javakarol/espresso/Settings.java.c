@@ -47,14 +47,12 @@ class Settings {
 	}
 
 	protected void initProps() {
-		// reader used in this method
-		BufferedReader reader;
-
+		props = new Properties();
 		// main property file stored in env var
 		gloprops = System.getenv("EK_PROPS");
 
 		try {
-			props = readProps(props, gloprops);
+			readProps(gloprops);
 		} catch (FileNotFoundException e) {
 			System.err.println("FATAL ERROR: main property file(" + gloprops + ") not found:");
 			e.printStackTrace();
@@ -70,10 +68,10 @@ class Settings {
 			String val = getEkProp(key);
 			//if ((key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) && new File(val).exists()) {
 			if (key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) {
-				for (String path : val.split(":")) {
+				for (String path : val.split(File.pathSeparator)) {
 					if (new File(path).exists()) {
 						try {
-							props = readProps(props, path);
+							readProps(path);
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -86,17 +84,16 @@ class Settings {
 		String saves = getEkProp("ek.props.saves");
 		if (new File(saves).exists()) {
 			try {
-				props = readProps(props, saves);
+				readProps(saves);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 	}
 
-	protected Properties readProps(Properties defaultProps, String path)
+	protected Properties readProps(String path)
 		throws FileNotFoundException, IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(path));
-		Properties props = new Properties(defaultProps);
 		props.load(reader);
 
 		return props;
