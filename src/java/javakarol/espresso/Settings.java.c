@@ -3,7 +3,8 @@ package javakarol.espresso;
 
 import ro.jo.java.io.CharsetSensitiveFileToStringReader;
 
-import java.util.Properties;
+import net.jmatrix.eproperties.EProperties;
+
 import java.util.Map;
 import java.util.HashMap;
 
@@ -32,7 +33,7 @@ class Settings {
 	final static String BUILD_ENV = __EK_BUILD_ENV__;
 
 	private String gloprops;
-	private Properties props;
+	private EProperties props;
 
 	private HashMap<String, HashMap<String, String>> modes;
 	final static String DEFAULT_MODE = "default";
@@ -47,12 +48,12 @@ class Settings {
 	}
 
 	protected void initProps() {
-		props = new Properties();
+		props = new EProperties();
 		// main property file stored in env var
 		gloprops = System.getenv("EK_PROPS");
 
 		try {
-			readProps(gloprops);
+			props.load(gloprops);
 		} catch (FileNotFoundException e) {
 			System.err.println("FATAL ERROR: main property file(" + gloprops + ") not found:");
 			e.printStackTrace();
@@ -63,40 +64,6 @@ class Settings {
 			System.exit(2);
 		}
 
-		// load additional props specified in main prop file
-		for (String key : props.keySet().toArray(new String[0])) {
-			String val = getEkProp(key);
-			//if ((key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) && new File(val).exists()) {
-			if (key.startsWith("ek.props.static") || key.startsWith("eks.props.static")) {
-				for (String path : val.split(File.pathSeparator)) {
-					if (new File(path).exists()) {
-						try {
-							readProps(path);
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}
-
-		}
-
-		String saves = getEkProp("ek.props.saves");
-		if (new File(saves).exists()) {
-			try {
-				readProps(saves);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	protected Properties readProps(String path)
-		throws FileNotFoundException, IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(path));
-		props.load(reader);
-
-		return props;
 	}
 
 	protected String getEkProp(String key) {
@@ -297,13 +264,14 @@ class Settings {
 	}
 
 	protected void save() throws IOException {
-		Properties toSaveProps = new Properties();
-		for (String key : props.keySet().toArray(new String[0]))
-			if (props.getProperty(key.replaceAll("^ek\\.", "eks\\."), new String()).isEmpty())
+		EProperties toSaveProps = new EProperties();
+		for (Object okey : props.keySet().toArray()) {
+			String key = (String) okey;
+			if (key.startsWith("ek") && props.getProperty(key.replaceAll("^ek\\.", "eks\\."), new String()).isEmpty())
 				toSaveProps.setProperty(key, props.getProperty(key));
+		}
 
-		BufferedWriter writer = new BufferedWriter(new FileWriter(getEkProp("ek.props.saves")));
-		toSaveProps.store(writer, "Saved Properties. Changes will be overwritten.");
+		toSaveProps.save(getEkProp("ek.props.saves"));
 	}
 
 	protected String getJava() {
