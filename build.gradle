@@ -127,7 +127,7 @@ String toJava(String string) {
 def settingsPath = "src/main/java/javakarol/espresso/Settings.java"
 
 compileJava.doFirst {
-	def inf = new File("${settingsPath}.c")
+	def inf = new File("${settingsPath}.templ")
 	def settingsTempl = inf.getText("UTF-8")
 	def settingsCode = settingsTempl\
 		.replace('__EK_VERSION__', toJava(version))\
