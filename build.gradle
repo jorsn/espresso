@@ -6,6 +6,7 @@ apply plugin:'wrapper'
 
 defaultTasks 'build'
 test.enabled = false
+run.enabled = false
 
 sourceCompatibility = 1.7
 
