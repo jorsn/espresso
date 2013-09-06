@@ -149,6 +149,8 @@ task createDocs {
 applicationDistribution.from('README.md') { into "" }
 applicationDistribution.from('LICENSE') { into "" }
 
+distTar.compression = Compression.BZIP2
+
 task addclean(type: Delete) {
 	delete(settingsPath)
 }
