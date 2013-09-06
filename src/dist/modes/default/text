@@ -1,0 +1,2 @@
+WELT welt = new WELT(10, 10, 10);
+ROBOTER karol = new ROBOTER(welt);

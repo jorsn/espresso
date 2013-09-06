@@ -1,0 +1,23 @@
+system 		= [method://java.lang.System.getProperties()]
+
+eks.islocal	= true
+eks.packagedir	= javakarol/espresso
+eks.datadir	= ./
+
+ek.modes.default= default
+eks.userdir	= ${system->user.home}/.espresso
+
+eks.licenses.paths.ek		= ../../doc/LICENSE.txt
+eks.licenses.paths.mpl		= ../../doc/MPL-1.1.txt
+eks.licenses.paths.apache	= ../../doc/LICENSE-2.0.txt
+
+
+
+eks.props.saves	= ${eks.userdir}/saved.props
+
+
+# The saved properties.
+# WARNING: Do not remove this!
+[${eks.props.saves}|failonerror=false]
+
+# vim: filetype=jproperties
