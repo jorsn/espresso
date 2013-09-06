@@ -1,1 +1,4 @@
-src/java/javakarol/espresso/Settings.java
+build/
+.gradle/
+lib/
+src/main/java/javakarol/espresso/Settings.java
