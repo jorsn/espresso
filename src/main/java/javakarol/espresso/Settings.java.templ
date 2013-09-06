@@ -79,10 +79,6 @@ class Settings {
 		return val;
 	}
 
-	protected boolean isLocal() {
-		return getEkProp("ek.islocal").equals("true");
-	}
-
 	protected String getPackageDir() {
 		return getEkProp("ek.packagedir");
 	}

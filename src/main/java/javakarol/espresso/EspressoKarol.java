@@ -355,12 +355,7 @@ public class EspressoKarol implements ActionListener, WindowListener, ComponentL
 					+ ".java", userKarolDir, settings.getPackageDir(), File.separator));*/
 		final StringJavaFileObject javafile = new StringJavaFileObject(settings.getPackageDir() + "." + className, getJavaCode(className, editor.getText()));
 
-		final String jklibdir = String.format((settings.isLocal()
-					? ".%1$slib"
-					: "..%1$s..%<slib%<sjava%<sjavakarol"),
-				File.separator);
-		final String classpathString = String.format("%1$s%4$s%2$s%3$sjavakarol.jar%4$s.",
-				userKarolDir, jklibdir, File.separator, File.pathSeparator);
+		final String classpathString = userKarolDir + File.pathSeparator + System.getProperty("java.class.path");
 			/*userKarolDir + File.pathSeparator + "."
 				+ File.pathSeparator + (settings.isLocal() ? ".."
 						+ File.separator + "lib" : ".." + File.separator
