@@ -146,10 +146,8 @@ task createDocs {
     }
 }
 
-applicationDistribution {
-	from('README.md') { into "" }
-	from('LICENSE') { into "" }
-}
+applicationDistribution.from('README.md') { into "" }
+applicationDistribution.from('LICENSE') { into "" }
 
 clean.doLast {
 	delete(settingsPath)
