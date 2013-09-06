@@ -29,7 +29,6 @@ class Settings {
 	final static String NAME = __EK_NAME__;
 	final static String VERSION = __EK_VERSION__;
 	final static String LICENSE_HINT = __EK_LICENSE_HINT__;
-	final static String BUILD_ENV = __EK_BUILD_ENV__;
 
 	private String gloprops;
 	private Properties props;

@@ -145,10 +145,9 @@ public class EspressoKarol implements ActionListener, WindowListener, ComponentL
 
 			int exitVal;
 			if (!version.isEmpty()) {
-				System.out.println(String.format("%n%1$s, version %2$s %n%3$s %n %n%4$s %n %n%5$s %n",
+				System.out.println(String.format("%n%1$s, version %2$s %n%3$s %n %n %n%5$s %n",
 							Settings.NAME, Settings.VERSION,
 							Settings.LICENSE_HINT,
-							settings.BUILD_ENV,
 							usage));
 				exitVal = 1;
 			} else {
