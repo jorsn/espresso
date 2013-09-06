@@ -49,7 +49,7 @@ class Settings {
 	protected void initProps() {
 		props = new EProperties();
 		// main property file stored in env var
-		String appHome = System.getProperty("java.class.path").split("/lib/")[0];
+		String appHome = System.getProperty("java.class.path").split("(/|\\\\)lib(/|\\\\)")[0];
 		System.setProperty("app.home", appHome);
 		gloprops = appHome + "/espresso.props";
 
@@ -81,8 +81,8 @@ class Settings {
 		return val;
 	}
 
-	protected boolean isLocal() {
-		return getEkProp("ek.islocal").equals("true");
+	protected String getAppHome() {
+		return props.getProperty("system->app.home");
 	}
 
 	protected String getPackageDir() {
