@@ -149,10 +149,17 @@ task createDocs {
 applicationDistribution.from('README.md') { into "" }
 applicationDistribution.from('LICENSE') { into "" }
 
-clean.doLast {
+task addclean(type: Delete) {
 	delete(settingsPath)
-	delete('lib/*')
+}
+clean.dependsOn addclean
+
+task superclean(dependsOn: clean, type: Delete) {
 	delete('lib')
+}
+
+task mrpropper(dependsOn: superclean, type: Delete) {
+	delete('.gradle')
 }
 
 
