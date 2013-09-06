@@ -1,0 +1,176 @@
+import java.util.zip.ZipFile
+import java.util.zip.ZipEntry
+apply plugin: 'java'
+apply plugin:'application'
+apply plugin:'wrapper'
+
+defaultTasks 'build'
+test.enabled = false
+
+sourceCompatibility = 1.7
+
+
+def ekName = 'Espresso Karol'
+def licenseHint = """Copyright (C) 2013, Johannes Rosenberger <jo.rosenberger@gmx-topmail.de>
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+OF SUCH DAMAGE.
+
+For more details please read the 'LICENSE' file."""
+
+version = ""
+
+task stable << {
+	def versionProc = 'git tag'.execute()
+	versionProc.waitFor()
+	def versions = versionProc.in.text
+	if (versions != null && ! versions.isEmpty()) {
+		version = versions.split('\\n').reverse()[0].trim()
+	} else {
+		System.err.println 'No stable version available!'
+		System.exit(1)
+	}
+}
+
+if (version == "") {
+	def commit = 'git log'.execute().in.text.split('\\s')[1]
+	def versionProc = "git tag --contains ${commit}".execute()
+	versionProc.waitFor()
+	def versions = versionProc.in.text
+	if (versionProc.exitValue() == 0 && ! versions.isEmpty()) {
+		version = versions.split('\\n').reverse()[0].trim()
+	} else {
+		version = "${commit}git"
+	}
+}
+
+mainClassName = 'javakarol.espresso.EspressoKarol'
+applicationName = "espresso"
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': ekName, 'Implementation-Version': version
+    }
+}
+
+def flatDeps = [ 'sdreams':['name':'sdreams', 'version':'v0.1'],
+    'eproperties':['name':'eproperties', 'version':'1.1.5'],
+    'javakarol':['name':'javakarol', 'version':'1.1']
+    ]
+[
+	['name':'sdreams', 'url':"https://github.com/jorsn/sdreams/releases/download/${flatDeps.sdreams.version}/", 'file':"sdreams-${flatDeps.sdreams.version}.jar"],
+	['name':'eproperties', 'url':'http://eproperties.googlecode.com/files/', 'file':"eproperties-${flatDeps.eproperties.version}.jar"],
+	['name':'javakarol', 'url':'http://www.schule.bayern.de/karol/data/', 'file':"javakarol.zip"]
+].each { map ->
+	flatDeps["${map.name}"]['url'] = map.url
+	flatDeps["${map.name}"]['file'] = map.file
+}
+
+
+task dirs {
+	outputs.dir 'lib'
+	doLast {
+		mkdir('lib')
+	}
+}
+
+task dlFlatDeps(dependsOn: dirs) {
+	outputs.files(flatDeps.values().collect { dep -> "lib/${dep.file}" })
+	doLast {
+		flatDeps.values().each { flatDep ->
+			def of = new File("lib/${flatDep.file}").withOutputStream { out -> out.leftShift "${flatDep.url + flatDep.file}".toURL().openStream() }
+			if (flatDep.name == 'javakarol') { // unzip -f javakarol.zip javakarol.jar -d lib
+				def karolzip = zipTree("lib/${flatDep.file}")
+				def karoljar = flatDep.file.replace(".zip", '.jar')
+				copy {
+					from(karolzip) {
+						include karoljar
+					}
+					into("lib/")
+				}
+			}
+		}
+	}
+}
+compileJava.dependsOn dlFlatDeps
+
+repositories {
+    mavenCentral()
+    flatDir {
+	    dirs 'lib'
+    }
+}
+
+
+dependencies {
+    compile group: 'de.sciss', name: 'jsyntaxpane', version: '1.0.0'
+    compile group: 'com.googlecode.juniversalchardet', name: 'juniversalchardet', version: '1.0.3'
+    compile group: 'commons-logging', name: 'commons-logging', version: '1.1.1'
+    flatDeps.values().each { flatDep ->
+	    compile name: flatDep.name, version: flatDep.version
+    }
+    runtime files("lib/${flatDeps.javakarol.file}")
+}
+
+String toJava(String string) {
+	return '\"' + string.replace('\"', '\\\"').replaceAll('\\n', '\"\n+ \"') + '\"'
+}
+
+def settingsPath = "src/main/java/javakarol/espresso/Settings.java"
+
+compileJava.doFirst {
+	def inf = new File("${settingsPath}.c")
+	def settingsTempl = inf.getText("UTF-8")
+	def settingsCode = settingsTempl\
+		.replace('__EK_VERSION__', toJava(version))\
+		.replace('__EK_NAME__', toJava(ekName))\
+		.replace('__EK_LICENSE_HINT__', toJava(licenseHint))
+	def outf = new File(settingsPath)
+	outf.write(settingsCode, "UTF-8")
+}
+
+task createDocs {
+    def docs = file("$buildDir/docs")
+    outputs.dir docs
+    doLast {
+        docs.mkdirs()
+        new File(docs, "readme.txt").write("Read me!")
+    }
+}
+
+applicationDistribution {
+	from('README.md') { into "" }
+	from('LICENSE') { into "" }
+}
+
+clean.doLast {
+	delete(settingsPath)
+	delete('lib/*')
+	delete('lib')
+}
+
+
+/*
+test {
+    systemProperties 'property': 'value'
+}
+*/
+/*
+uploadArchives {
+    repositories {
+       flatDir {
+           dirs 'repos'
+       }
+    }
+}
+*/
+
+// vim: ft=groovy
