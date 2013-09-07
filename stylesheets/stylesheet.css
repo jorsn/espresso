@@ -288,6 +288,19 @@ Full-Width Styles
   border-bottom-right-radius: 2px;
 }
 
+#espresso_logo {
+  display: block;
+  position: absolute;
+  left: -150px;
+  top: 30px;
+  z-index: 10;
+  border: none;
+  padding: 80px 80px 70px 80px;
+  background: url('../images/espresso.png') no-repeat;
+  background-size: 140px auto;
+  box-shadow: none;
+}
+
 #header_wrap {
   background: #212121;
   background: -moz-linear-gradient(top, #373737, #212121);
