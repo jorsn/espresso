@@ -16,6 +16,15 @@ Features
 * automatic compilation and running of javakarol programs
 * save and restore
 * flexible configuration via modes and [EProperties] files [(manual)][eprops-man]
+* gradle build and ecj: no dependencies except for a JRE
+
+
+Dependencies
+------------
+
+* Java Runtime Environment 1.6 or 1.7
+* [gradle] is installed by [gradlew]
+* the rest is managed automatically by [gradle]
 
 
 Usage
