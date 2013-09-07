@@ -112,7 +112,7 @@ It is released under the [Apache License, Version 2.0][apl]
 The source code can be obtained [here][comm-log].
 
 
-###Eclipse Compiler for Java (ecj) v4.2.2+
+####Eclipse Compiler for Java (ecj) v4.2.2+
 
 is released under the [Eclipse Public License v 1.0][epl]
 (see `3rd-party-licenses/ecj.txt`).
