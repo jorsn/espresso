@@ -91,6 +91,13 @@ It is released under the [Apache License, Version 2.0][apl]
 The source code can be obtained [here][comm-log].
 
 
+###Eclipse Compiler for Java (ecj) v4.2.2+
+
+is released under the [Eclipse Public License v 1.0][epl]
+(see `3rd-party-licenses/ecj.txt`).
+The source code can be obtained [here][ecj-source]
+
+
 ####[sdreams] v0.1
 
 Copyright (c) 2013 Johannes Rosenberger
@@ -124,10 +131,12 @@ or [here as PDF][jkarol-pdf].
 
 [apl]: http://www.apache.org/licenses/LICENSE-2.0
 [mpl]: http://www.mozilla.org/MPL/1.1/
+[epl]: http://www.eclipse.org/legal/epl-v10.html
 
 [JSyntaxPane]: https://github.com/Sciss/JSyntaxPane
 [juniversalchardet]: https://code.google.com/p/juniversalchardet/
 [comm-log]: http://commons.apache.org/proper/commons-logging/
+[ecj-source]: http://wiki.eclipse.org/Stardust/Source_Code#Browsing_the_Source_Code
 [sdreams]: https://github.com/jorsn/sdreams
 [EProperties]: http://code.google.com/p/eproperties/
 [eprops-man]: http://eproperties.googlecode.com/svn/docs/1.1.2/manual/index.html
