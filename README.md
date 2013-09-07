@@ -39,6 +39,18 @@ In the default mode, only the body of the `main` method of a
 javakarol program has to be written, but the preset parts of the class can be
 configured by creating other modes.
 
+All modes are located in the directory `modes` or `src/dist/modes`.
+They are constituted of a directory whose name is the mode name, which contains three
+files:
+
+* `code`: An executable java class template. `// karolcode` is substituted by the
+  javakarol code from the editor.
+* `desc` (optional): A description for this mode which is displayed above the editor
+  pane.
+* `text` (optional): A default text that is automatically inserted in the editor pane.
+
+For examples please have a look at the built-in modes.
+
 
 
 Copyright
