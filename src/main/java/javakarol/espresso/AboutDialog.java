@@ -1,6 +1,6 @@
-/* About - The about windows for Espresso Karol
+/* About - The about window for Espresso Karol
  * 
- * Copyright (C) 2011, Johannes Rosenberger <jo.rosenberger@gmx-topmail.de>
+ * Copyright (c) 2013, Johannes Rosenberger <jo.rosenberger(at)gmx-topmail.de>
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -16,7 +16,7 @@
 
 /**
  * 
- */
+ **/
 package javakarol.espresso;
 
 import java.io.File;
