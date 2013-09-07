@@ -23,6 +23,8 @@ package javakarol.espresso;
 import ro.jo.java.io.CharsetSensitiveFileToStringReader;
 import ro.jo.java.io.MergedCharacterInputStream;
 
+import org.eclipse.jdt.internal.compiler.tool.EclipseCompiler;
+
 import java.awt.Image;
 import java.awt.Font;
 import java.awt.Color;
@@ -145,7 +147,7 @@ public class EspressoKarol implements ActionListener, WindowListener, ComponentL
 
 			int exitVal;
 			if (!version.isEmpty()) {
-				System.out.println(String.format("%n%1$s, version %2$s %n%3$s %n %n %n%5$s %n",
+				System.out.println(String.format("%n%1$s, version %2$s %n%3$s %n %n %n",
 							Settings.NAME, Settings.VERSION,
 							Settings.LICENSE_HINT,
 							usage));
@@ -351,26 +353,15 @@ public class EspressoKarol implements ActionListener, WindowListener, ComponentL
 		System.gc();
 		final String userKarolDir = settings.getUserKarolDir();
 		final String className = "Player" + Integer.toHexString(editor.getText().hashCode());
-		/*final File javafile = new File(String.format("%1$s%3$s%2$s%3$s" + className
-					+ ".java", userKarolDir, settings.getPackageDir(), File.separator));*/
 		final StringJavaFileObject javafile = new StringJavaFileObject(settings.getPackageDir() + "." + className, getJavaCode(className, editor.getText()));
 
 		final String classpathString = userKarolDir + File.pathSeparator + System.getProperty("java.class.path");
-			/*userKarolDir + File.pathSeparator + "."
-				+ File.pathSeparator + (settings.isLocal() ? ".."
-						+ File.separator + "lib" : ".." + File.separator
-						+ ".." + File.separator + "lib" + File.separator
-						+ "java" + File.separator
-						+ "javakarol") + File.separator + "javakarol.jar";*/
-
-		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		EclipseCompiler compiler = new EclipseCompiler();
 		DiagnosticCollector<JavaFileObject> diagnostics =
 			new DiagnosticCollector<JavaFileObject>();
 		StandardJavaFileManager fileManager = compiler.getStandardFileManager( diagnostics, null, null );
 		Iterable<? extends JavaFileObject> units = Arrays.asList( javafile );
-		CompilationTask task = compiler.getTask( null, fileManager, diagnostics,
-				Arrays.asList("-d", userKarolDir)
-					, null, units );
+		CompilationTask task = compiler.getTask( null, null, diagnostics, Arrays.asList("-d", userKarolDir), null, units );
 		boolean success = task.call();
 		fileManager.close();
 
@@ -385,38 +376,7 @@ public class EspressoKarol implements ActionListener, WindowListener, ComponentL
 				int lnum = ((int) diagnostic.getLineNumber()) - Integer.parseInt(mode.get("offset"));
 				console.append(String.format( "Zeile: %1$s%n", lnum) );
 				ActionUtils.setCaretPosition(editor, lnum, (int) diagnostic.getColumnNumber());
-				/*console.append(String.format( "Zeile/Spalte: %1$s/%2$s%n", diagnostic.getLineNumber() - Integer.parseInt(mode.get("offset")),
-							diagnostic.getColumnNumber() ));
-				//console.append(String.format( "Startpostion/Endposition: %1$s/%2$s%n", diagnostic.getStartPosition(),
-							//diagnostic.getEndPosition() ));*/
 			}
-		/*
-		System.err.println("compiling");
-		final PipedOutputStream compStdout = new PipedOutputStream();
-		final PipedOutputStream compStderr = new PipedOutputStream();
-		final MergedCharacterInputStream merged = new MergedCharacterInputStream(80
-				, new PipedInputStream(compStdout)
-				, new PipedInputStream(compStderr));
-		ToolProvider.getSystemJavaCompiler().run(null, compStdout, compStderr,
-				"-classpath", classpathString, javafile.getAbsolutePath());
-		compStdout.close();
-		compStderr.close();
-
-		String stdoutErr = merged.readString();
-		console.setText(stdoutErr);*/
-		/*
-
-		ProcessBuilder compilation = new ProcessBuilder(settings.getJavac(), "-classpath",
-				classpathString, javafile.getAbsolutePath());
-		Process compp = compilation.start();
-		console.read(new BufferedReader(new InputStreamReader(
-					new SequenceInputStream(
-						compp.getErrorStream(),
-						compp.getInputStream()))),
-				"espresso-karol-javac-output");
-
-				*/
-
 		} else {
 			Process karolexec = new ProcessBuilder(settings.getJava(),
 					"-classpath", classpathString, 
@@ -431,40 +391,6 @@ public class EspressoKarol implements ActionListener, WindowListener, ComponentL
 					console.append(line + "\n");
 			} while (line != null);
 		}
-		
-		//console.read();
-		
-		/*System.err.println("playing");
-		Thread t = new Thread(new Runnable() {
-			public void run() {
-				try {
-					File playerFile = new File(userKarolDir);
-
-					System.err.println(playerFile.toURI().toURL().toString());
-					URLClassLoader.newInstance(new URL[] { playerFile.toURI().toURL() }).loadClass("javakarol.espresso." + className)
-						.getMethod("main").invoke(this);
-				} catch (SecurityException se) {
-				} catch (ClassNotFoundException cnfe) {
-					/*PipedOutputStream straceO = new PipedOutputStream();
-
-					  cnfe.printStackTrace(new PrintStream(straceO));
-					  console.read(new InputStreamReader(new PipedInputStream(straceO)), "Player.stack-trace");*/
-					/*cnfe.printStackTrace();
-				} catch (Exception e) {
-					/*PipedOutputStream straceO = new PipedOutputStream();
-
-					  e.printStackTrace(new PrintStream(straceO));
-					  console.read(new InputStreamReader(new PipedInputStream(straceO)), "Player.stack-trace");*/
-					/*e.printStackTrace();
-				}
-			}
-		});
-		t.start();*/
-		
-
-		//javafile.delete();
-		//new File(javafile.getAbsolutePath().replace(".java", ".class"))
-				//.delete();
 		new File(String.format("%1$s%4$s%2$s%4$s%3$s.class", userKarolDir
 					, settings.getPackageDir(), className, File.separator)).delete();
 		System.gc();
@@ -485,34 +411,12 @@ public class EspressoKarol implements ActionListener, WindowListener, ComponentL
 			}
 		} else if (command.startsWith("lookAndFeel=")) {
 			setLookAndFeel(command.split("=")[1]);
-		/*} else if (command.equals("setJavacLoc")) {
-			String javac = chooseFile(JFileChooser.OPEN_DIALOG,
-					getFileFilter("Java Compiler", "javac(\\..*)?"),
-					"FEHLER: Der Pfad ist ungültig!\n"
-					+ "Verwende bisherigen Pfad: " + settings.getJavac(), false)
-				.getAbsolutePath();
-			if (javac != null)
-				settings.setJavac(javac);
-		} else if (command.equals("setJavaLoc")) {
-			String java = chooseFile(JFileChooser.OPEN_DIALOG,
-					getFileFilter("Java VM", "java(\\..*)?"),
-					"FEHLER: Der Pfad ist ungültig!\n"
-					+ "Verwende bisherigen Pfad: " + settings.getJava(), false)
-				.getAbsolutePath();
-			if (java != null)
-				settings.setJava(java);*/
 		} else if (command.startsWith("mode=")) {
 			settings.setMode(command.split("=")[1]);
 			initMode();
 		} else if (command.equals("about")) {
 			AboutDialog dialog = new AboutDialog(settings);
-		}/* else if (command.equals("copy")) {
-			editor.copy();
-		} else if (command.equals("cut")) {
-			editor.cut();
-		} else if (command.equals("paste")) {
-			editor.paste();
-		}*/
+		}
 		frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 	}
 
