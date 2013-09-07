@@ -115,9 +115,7 @@ dependencies {
     compile group: 'de.sciss', name: 'jsyntaxpane', version: '1.0.0'
     compile group: 'com.googlecode.juniversalchardet', name: 'juniversalchardet', version: '1.0.3'
     compile group: 'commons-logging', name: 'commons-logging', version: '1.1.1'
-    //compile group: 'org.codehaus.janino', name: 'janino', version: '2.6.1'
     compile group: 'org.eclipse.jdt.core.compiler', name: 'ecj', version: '4.2.2+'
-    //compile group: 'org.apache.commons', name: 'commons-jci-javac', version: '1.+'
     flatDeps.values().each { flatDep ->
 	    compile name: flatDep.name, version: flatDep.version
     }
