@@ -1,5 +1,5 @@
 system 		= [method://java.lang.System.getProperties()]
-env 		= [method://java.lang.System.getenv()]
+
 
 eks.home	= ${system->app.home}
 
@@ -9,18 +9,12 @@ eks.datadir	= ${eks.home}
 ek.modes.default= default
 eks.userdir	= ${system->user.home}/.espresso
 
-eks.licensedir			= ${eks.home}/3rd-party-licenses
-eks.licenses.paths.ek		= ${eks.home}/LICENSE
-eks.licenses.paths.mpl		= ${eks.licensedir}/juniversalchardet.txt
-eks.licenses.paths.apache	= ${eks.licensedir}/jsyntaxpane.txt
-
-
-
 eks.props.saves	= ${eks.userdir}/saved.props
 
 
 # The saved properties.
 # WARNING: Do not remove this!
-[${eks.props.saves}|failonerror=false]
+[/${eks.props.saves}|failonerror=false]
+
 
 # vim: filetype=jproperties
