@@ -42,14 +42,24 @@ task stable << {
 }
 
 if (version == "") {
-	def commit = 'git log -1 --pretty=oneline'.execute().in.text.split('\\s')[0]
-	def versionProc = "git tag --contains ${commit}".execute()
-	versionProc.waitFor()
-	def versions = versionProc.in.text
-	if (versionProc.exitValue() == 0 && ! versions.isEmpty()) {
-		version = versions.split('\\n').reverse()[0].trim()
-	} else {
-		version = "${commit}git"
+	try {
+		def commitProc = 'git log -1 --pretty=oneline'.execute()
+		def commit = commitProc.in.text.split('\\s')[0]
+	
+		if (commitProc.exitValue() == 0) {
+			def versionProc = "git tag --contains ${commit}".execute()
+			versionProc.waitFor()
+			def versions = versionProc.in.text
+			if (versionProc.exitValue() == 0 && ! versions.isEmpty()) {
+			version = versions.split('\\n').reverse()[0].trim()
+			} else {
+				version = "${commit}git"
+			}
+		} else {
+			throw new Exception()
+		}
+	} catch (Exception e) {
+			version = file('version').getText().trim()
 	}
 }
 
