@@ -91,15 +91,13 @@ For more details please read the `LICENSE` file.
 
 Copyright 2008 Ayman Al-Sairafi ayman.alsairafi@gmail.com
 
-It is released under the [Apache License, Version 2.0][apl]
-(see `3rd-party-licenses/jsyntaxpane.txt`).
+It is released under the [Apache License, Version 2.0][apl].
 The source code can be obtained [here][JSyntaxPane].
 
 
 ####[juniversalchardet] v1.0.3
 
-is released under the [Mozilla Public License Version 1.1 (MPLv1.1)][mpl]
-(`see 3rd-party-licenses/juniversalchardet.txt`).
+is released under the [Mozilla Public License Version 1.1 (MPLv1.1)][mpl].
 The source code can be obtained [here][juniversalchardet].
 
 
@@ -107,15 +105,13 @@ The source code can be obtained [here][juniversalchardet].
 
 Copyright 2001-2007 The Apache Software Foundation
 
-It is released under the [Apache License, Version 2.0][apl]
-(see `3rd-party-licenses/commons-logging.txt`).
+It is released under the [Apache License, Version 2.0][apl].
 The source code can be obtained [here][comm-log].
 
 
 ####Eclipse Compiler for Java (ecj) v4.2.2+
 
-is released under the [Eclipse Public License v 1.0][epl]
-(see `3rd-party-licenses/ecj.txt`).
+is released under the [Eclipse Public License v 1.0][epl].
 The source code can be obtained [here][ecj-source]
 
 
@@ -132,8 +128,7 @@ The source code can be obtained [here][sdreams].
 
 Copyright 2009, Paul Bemowski
 
-It is released under the [Apache License, Version 2.0][apl]
-(see `3rd-party-licenses/eproperties.txt`).
+It is released under the [Apache License, Version 2.0][apl].
 The source code can be obtained [here][EProperties].
 
 
