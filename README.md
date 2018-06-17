@@ -6,6 +6,10 @@ students who are only starting to learn Java and yet have problems to write whol
 class structures.
 It is written in java and uses [gradle] for building.
 
+**IMPORTANT NOTE (2018-06-17):** This dates from the early days I programmed and therefore
+is probably of very bad code quality. Additionally, I know of no recent use of this and
+haven't updated it for some years. Hence, I declare this as deprecated and don't recommend
+it for use. *If you want to use it, please contact me under johannes.rosenberger (at) jorsn.eu.*
 
 Features
 -----------
